@@ -3,17 +3,24 @@
 // The ad itself lives on TikTok as a public video; this program only hands
 // the video's address to the grader. It reads VIDEO.json from the
 // repository root, checks it names a TikTok video address, and copies it
-// into the output directory. It writes nothing else.
+// into the output directory (MAKEFUN_OUTPUT_DIR, absolute as given, or
+// "out" under the repository root by default). It writes nothing else.
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = dirname(fileURLToPath(import.meta.url));
-const botDir = process.env.MAKEFUN_BOT_DIR ?? ".";
 const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? "out";
 
 const source = join(repoRoot, "VIDEO.json");
-const destinationDir = join(repoRoot, botDir, outputDir);
+// The grader hands us an absolute output directory (e.g. /output) that
+// lives outside the read-only bot directory, so use it as-is; a relative
+// value is resolved against the repository root. Never join the bot
+// directory into the destination — that used to build a nested path
+// under the read-only bot dir and crash the run.
+const destinationDir = isAbsolute(outputDir)
+  ? outputDir
+  : join(repoRoot, outputDir);
 const destination = join(destinationDir, "VIDEO.json");
 
 if (!existsSync(source)) {
